@@ -1,0 +1,33 @@
+# fig, ax = plt.subplots(ncols=3)
+# fig2, ax2 = plt.subplots()
+# ax[1].set_ylim([0,1])
+# plt.ylim(0, 1)
+#
+# A, k, m = map(float, input().split())
+# A2, k2, m2 = map(float, input().split())
+#
+# x = [A-m, A-k, A+k, A+m]
+# y = [0, 1, 1, 0]
+# ax[0].plot(x, y, linewidth='2.0')
+# x2 = [A2-m2, A2-k2, A2+k2, A2+m2]
+# y2 = [0, 1, 1, 0]
+# ax[0].plot(x2, y2, linewidth='2.0')
+#
+#
+# yq, xqq = cross([A, k, m], [A2, k2, m2])
+# x3 = [2, 3, 4, 5]
+# y3 = [0, yq, yq, 0]
+# ax[0].plot(xqq, yq, 'ro')
+# ax[1].plot(x3, y3, linewidth='2.0')
+# ax[2].plot(x, y3, linewidth='2.0')
+# ax[2].plot(x, y, linewidth='2.0')
+#
+#
+#
+# ax2.plot([2, 3, 4, 5], [0, 0.5, 0.5, 0], linewidth='2.0')
+# ax2.plot([4, 6, 8, 10], [0, 0.7, 0.7, 0], linewidth='2.0')
+# ax2.plot([7, 10, 12, 15], [0, 0.6, 0.6, 0], linewidth='2.0')
+# x_o, y_o = obrez([[[2, 3, 4, 5], 0.5], [[4, 6, 8, 10], 0.7], [[7, 10, 12, 15], 0.6]])
+# ax2.plot(x_o, y_o, linewidth='2.0')
+# plt.axvline(x=integral(x_o, y_o))
+# plt.show()
