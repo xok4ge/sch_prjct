@@ -1,0 +1,84 @@
+import matplotlib.pyplot as plt
+
+
+def fnc_sup(x, min1, min2, max1, max2, max_y=1):  # красиво fnc() выглядят
+    if min1 <= x <= max1:
+        return max_y
+    elif min2 < x < min1:
+        zero = (min2, 0)
+        nex = (min1, max_y)
+        y = ((nex[1] - zero[1])*(x - zero[0]))/(nex[0]-zero[0]) - zero[1]
+        return y
+    elif max1 < x < max2:
+        zero = (max2, 0)
+        nex = (max1, max_y)
+        y = ((nex[1] - zero[1]) * (x - zero[0])) / (nex[0] - zero[0]) - zero[1]
+        return y
+    return 0
+
+
+def obrez(args):  # число из нескольких нечетких чисел xD
+    alq_x, alq_y = [], []
+    d1, d2 = int(min([min(i[0]) for i in args]) // 0.01), int(max([max(i[0]) for i in args]) // 0.01)
+    xwe = d1
+    for _ in range(d1, d2):
+        t = [fnc_o(xwe, i[0], i[1]) for i in args]
+        alq_y.append(max(t))
+        alq_x.append(xwe)
+        xwe += 0.01
+    return alq_x, alq_y
+
+
+def integral(cordx, cordy):  # находим центр масс
+    dlt_x = cordx[1] - cordx[0]
+    inte, inte2 = 0, 0
+    for i in range(len(cordx)):
+        inte += dlt_x * cordy[i]
+        inte2 += dlt_x * cordy[i] * cordx[i]
+    return inte2 / inte
+
+
+def fnc_o(x, cord, max_y):  # для obrez()
+    min1, max1 = cord[1], cord[2]
+    min2, max2 = cord[0], cord[3]
+    return fnc_sup(x, min1, min2, max1, max2, max_y=max_y)
+
+
+def fnc(x, A, k, m):  # для cross()
+    min1, max1 = A-k, A+k
+    min2, max2 = A-m, A+m
+    return fnc_sup(x, min1, min2, max1, max2)
+
+
+def cross(trap1, trap2):  # нахождение пересечения двух нечетких чисел
+    alq_y, alq_x = [], []
+    d1, d2 = int(min(trap1[0] - trap1[2], trap2[0] - trap2[2]) // 0.01), int(min(trap1[0] + trap1[2], trap2[0] + trap2[1]) // 0.01)
+    xwe = d1
+    for x in range(d1, d2):
+        y_cord1, y_cord2 = fnc(xwe, *trap1), fnc(xwe, *trap2)
+        alq_y.append(min(y_cord1, y_cord2)), alq_x.append(xwe)
+        xwe += 0.01
+    return alq_x[alq_y.index(max(alq_y))], max(alq_y)
+
+
+class Rule:
+    def __init__(self, velocity, angle, output):
+        self.velocity = velocity
+        self.angle = angle
+        self.output = output
+
+    def get_kof(self, cur_v, cur_a):
+        x1, y1 = cross(self.velocity, cur_v)
+        x2, y2 = cross(self.angle, cur_a)
+        return [self.output, y1] if y1 > y2 else [self.output, y2]
+
+
+class Matrix:
+    def __init__(self, args):
+        self.rules = args
+
+    def center(self, cur_v, cur_a):
+        eva = [rule.get_kof(cur_v, cur_a) for rule in self.rules]
+        x_o, y_o = obrez([*eva])
+        cntr_mass = integral(x_o, y_o)
+        return cntr_mass
