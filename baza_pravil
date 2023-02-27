@@ -1,0 +1,149 @@
+import matplotlib.pyplot as plt
+from datetime import datetime
+import numpy as np
+import gym
+from scipy.optimize import basinhopping
+from numpy.random import rand
+from numpy import exp
+from numpy import sqrt
+from numpy import cos
+from numpy import e
+from numpy import pi
+
+def objective(v):
+    observation, reward = env.reset()
+    m = []
+    for i in range(0, 45, 9):
+        r = v[i:i+9]
+        rule = Rule([r[0], r[1], r[2]], [r[3], r[4], r[5]], [r[6], r[7], r[8]])
+        m.append(rule)
+    mat = Matrix(m)
+    counter = 0
+    while True:
+        agent = mat.center([observation[1], 0.02, 0.4], [observation[2], 0.04, 0.6])
+        observation, reward, terminated, truncated, info = env.step(agent)
+        # print(observation)
+        if terminated or truncated:
+            env.close()
+            return (-1 * float(counter))
+        print(counter)
+        counter += 1
+
+def fnc_sup(x, min1, min2, max1, max2, max_y=1):  # красиво fnc() выглядят
+    if min1 <= x <= max1:
+        return max_y
+    elif min2 < x < min1:
+        zero = (min2, 0)
+        nex = (min1, max_y)
+        y = ((nex[1] - zero[1])*(x - zero[0]))/(nex[0]-zero[0]) - zero[1]
+        return y
+    elif max1 < x < max2:
+        zero = (max2, 0)
+        nex = (max1, max_y)
+        y = ((nex[1] - zero[1]) * (x - zero[0])) / (nex[0] - zero[0]) - zero[1]
+        return y
+    return 0
+
+
+def obrez(args):  # число из нескольких нечетких чисел xD
+    alq_x, alq_y = [], []
+    d1 = int(int(min([a[0][0] - a[0][2] for a in args])) // 0.01)
+    xwe = np.ceil(d1 * 0.01)
+    for _ in range(d1, int(int(max([a[0][0] + a[0][2] for a in args])) // 0.01)):
+        t = [fnc_o(xwe, i[0], i[1]) for i in args]
+        alq_y.append(max(t))
+        alq_x.append(xwe)
+        xwe += 0.01
+    return alq_x, alq_y
+
+
+def integral(cordx, cordy):  # находим центр масс
+    dlt_x = cordx[1] - cordx[0]
+    inte = np.sum(dlt_x * np.array([cordy]))
+    inte2 = np.sum(dlt_x * np.array([cordy]) * np.array([cordx]))
+    return inte2 / inte if inte != 0 else 0
+
+
+def fnc_o(x, cord, max_y):  # для obrez()
+    min1, max1 = cord[0]-cord[1], cord[0]+cord[1]
+    min2, max2 = cord[0]-cord[2], cord[0]+cord[2]
+    return fnc_sup(x, min1, min2, max1, max2, max_y=max_y)
+
+
+def fnc(x, A, k, m):  # для cross()
+    min1, max1 = A-k, A+k
+    min2, max2 = A-m, A+m
+    return fnc_sup(x, min1, min2, max1, max2)
+
+
+def cross(trap1, trap2):  # нахождение пересечения двух нечетких чисел
+    alq_y, alq_x = [], []
+    xwe = trap1[0]
+    for x in range(len(trap1[1])):
+        y_cord1, y_cord2 = trap1[1][x], fnc(xwe, *trap2)
+        alq_y.append(min(y_cord1, y_cord2)), alq_x.append(xwe)
+        xwe += 0.01
+    return alq_x[alq_y.index(max(alq_y))], max(alq_y)
+
+
+class Rule:
+    def __init__(self, velocity, angle, output):
+        velocity = [sorted(velocity)[1], np.absolute(min(velocity)) if np.absolute(min(velocity)) != 0 else 1, np.absolute(max(velocity)) if np.absolute(max(velocity)) != 0 else 1]
+        angle = [sorted(angle)[1], np.absolute(min(angle)) if np.absolute(min(angle)) != 0 else 1, np.absolute(max(angle)) if np.absolute(max(angle)) != 0 else 1]
+        output = [sorted(output)[1], np.absolute(min(output)) if np.absolute(min(output)) != 0 else 1, np.absolute(max(output)) if np.absolute(max(output)) != 0 else 1]
+
+
+
+        v = np.arange(float((velocity[0] - velocity[2])), float((velocity[0] + velocity[2])), 0.01)
+        a = np.arange(float((angle[0] - angle[2])),float((angle[0] + angle[2])), 0.01)
+        self.velocity = [v[0], [fnc(i, *velocity) for i in v]]
+        self.angle = [a[0], [fnc(i, *angle) for i in a]]
+        self.output = output
+
+    def get_kof(self, cur_v, cur_a):
+        x1, y1 = cross(self.velocity, cur_v)
+        x2, y2 = cross(self.angle, cur_a)
+        out = [fnc(i, *self.output) for i in np.arange(float((self.output[0] - self.output[2])), float((self.output[0] + self.output[2])), 0.01)]
+        c = len(list(filter(lambda x: (y2 if y2 < y1 else y1) > x and out.index(x) < out.index(1), out))) * 0.01
+        if c != 0:
+            return [[self.output[0], self.output[2] - c, self.output[2]], y1] if y1 < y2 else [[self.output[0], self.output[2] - c, self.output[2]], y2]
+        return [[self.output[0], self.output[1], self.output[2]], y1] if y1 < y2 else [[self.output[0], self.output[1], self.output[2]], y2]
+
+
+class Matrix:
+    def __init__(self, args):
+        self.rules = args
+
+    def center(self, cur_v, cur_a):
+        eva = []
+        for rule in self.rules:
+            eva.append(rule.get_kof(cur_v, cur_a))
+        # fig2, ax2 = plt.subplots()
+        x_o, y_o = obrez([*eva])
+        cntr_mass = integral(x_o, y_o)
+        # ax2.plot(x_o, y_o, '#17A589', linewidth='2.0')
+        # print(cntr_mass)
+        # plt.show()
+        return 1 if cntr_mass > 0 else 0
+
+env = gym.make('CartPole-v1')
+# c1 = Rule([6, 2, 8], [10, 2, 7], [3, 1, 2])
+# c2 = Rule([5, 2, 3], [15, 3, 4], [6, 2, 4])
+# m = Matrix([c1, c2])
+# start = datetime.now()
+
+
+
+# define range for input
+r_min, r_max = -10.0, 10.0
+# define the starting point as a random sample from the domain
+pt = np.random.randint(r_min, r_max, 45)
+# perform the basin hopping search
+result = basinhopping(objective, pt, stepsize=0.5, niter=200)
+# summarize the result
+print('Status : %s' % result['message'])
+print('Total Evaluations: %d' % result['nfev'])
+# evaluate solution
+solution = result['x']
+evaluation = objective(solution)
+print('Solution: f(%s) = %.5f' % (solution, evaluation))
